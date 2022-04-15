@@ -15,7 +15,15 @@ import "./ha-form-multi_select";
 import "./ha-form-positive_time_period_dict";
 import "./ha-form-select";
 import "./ha-form-string";
-import { HaFormDataContainer, HaFormElement, HaFormSchema } from "./types";
+import {
+  HaFormDataContainer,
+  HaFormElement,
+  HaFormSchema,
+  HaFormFrontendComponent,
+} from "./types";
+
+import AbstractFrontendFormComponent from "./FrontendFormComponents/AbstractFrontendFormComponent";
+import "./FrontendFormComponents/FrontendFormComponents";
 
 const getValue = (obj, item) =>
   obj ? (!item.name ? obj : obj[item.name]) : null;
@@ -29,6 +37,10 @@ export class HaForm extends LitElement implements HaFormElement {
   @property({ attribute: false }) public data!: HaFormDataContainer;
 
   @property({ attribute: false }) public schema!: readonly HaFormSchema[];
+
+  @property({ attribute: false }) public submit_fn!: (
+    evt: Event
+  ) => Promise<void> | null;
 
   @property() public error?: Record<string, string>;
 
@@ -54,6 +66,20 @@ export class HaForm extends LitElement implements HaFormElement {
         break;
       }
     }
+  }
+
+  loadComponent(data: HaFormFrontendComponent) {
+    const component = document.createElement(data.component_name);
+    if (!(component instanceof AbstractFrontendFormComponent))
+      return html`<p>
+        -- Error, no form component named ${data.component_name} --
+      </p>`;
+    component.render(
+      this.data,
+      data.options,
+      this.submit_fn ? this.submit_fn : async (_) => {}
+    );
+    return component;
   }
 
   protected render(): TemplateResult {
@@ -90,6 +116,8 @@ export class HaForm extends LitElement implements HaFormElement {
                   .required=${item.required || false}
                   .context=${this._generateContext(item)}
                 ></ha-selector>`
+              : item.type === "frontend-component"
+              ? this.loadComponent(item)
               : dynamicElement(`ha-form-${item.type}`, {
                   schema: item,
                   data: getValue(this.data, item),
