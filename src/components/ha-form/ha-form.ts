@@ -15,15 +15,8 @@ import "./ha-form-multi_select";
 import "./ha-form-positive_time_period_dict";
 import "./ha-form-select";
 import "./ha-form-string";
-import {
-  HaFormDataContainer,
-  HaFormElement,
-  HaFormSchema,
-  HaFormFrontendComponent,
-} from "./types";
-
-import AbstractFrontendFormComponent from "./FrontendFormComponents/AbstractFrontendFormComponent";
-import "./FrontendFormComponents/FrontendFormComponents";
+import { HaFormDataContainer, HaFormElement, HaFormSchema } from "./types";
+import "./ha-form-frontend-component";
 
 const getValue = (obj, item) =>
   obj ? (!item.name ? obj : obj[item.name]) : null;
@@ -68,20 +61,6 @@ export class HaForm extends LitElement implements HaFormElement {
     }
   }
 
-  loadComponent(data: HaFormFrontendComponent) {
-    const component = document.createElement(data.component_name);
-    if (!(component instanceof AbstractFrontendFormComponent))
-      return html`<p>
-        -- Error, no form component named ${data.component_name} --
-      </p>`;
-    component.render(
-      this.data,
-      data.options,
-      this.submit_fn ? this.submit_fn : async (_) => {}
-    );
-    return component;
-  }
-
   protected render(): TemplateResult {
     return html`
       <div class="root" part="root">
@@ -116,8 +95,6 @@ export class HaForm extends LitElement implements HaFormElement {
                   .required=${item.required || false}
                   .context=${this._generateContext(item)}
                 ></ha-selector>`
-              : item.type === "frontend-component"
-              ? this.loadComponent(item)
               : dynamicElement(`ha-form-${item.type}`, {
                   schema: item,
                   data: getValue(this.data, item),
@@ -128,6 +105,7 @@ export class HaForm extends LitElement implements HaFormElement {
                   computeLabel: this.computeLabel,
                   computeHelper: this.computeHelper,
                   context: this._generateContext(item),
+                  submit_fn: this.submit_fn,
                 })}
           `;
         })}
@@ -160,8 +138,9 @@ export class HaForm extends LitElement implements HaFormElement {
         ? ev.detail.value
         : { [schema.name]: ev.detail.value };
 
+      this.data = { ...this.data, ...newValue }; // this is wrong, but if value-changed happens too fast, only one event will be updated because top level handler wont update the data for us.
       fireEvent(this, "value-changed", {
-        value: { ...this.data, ...newValue },
+        value: this.data,
       });
     });
     return root;
