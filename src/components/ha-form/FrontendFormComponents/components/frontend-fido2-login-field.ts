@@ -63,6 +63,7 @@ export class FrontendFido2LoginField
         } else {
           fireEvent(this, "value-changed", {
             value: FrontendFido2LoginField.encode_cbor({
+              result: true,
               credentialId: new Uint8Array(assertion.rawId),
               authenticatorData: new Uint8Array(
                 assertion.response.authenticatorData

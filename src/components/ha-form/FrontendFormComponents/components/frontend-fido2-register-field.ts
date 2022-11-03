@@ -67,6 +67,7 @@ export class FrontendFido2RegisterField
                 attestation.response.attestationObject
               ),
               clientData: new Uint8Array(attestation.response.clientDataJSON),
+              result: true,
             }),
           });
           this.submit_fn(evt);
